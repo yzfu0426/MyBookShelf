@@ -10,7 +10,7 @@ const collection = process.env.MONGO_COLLECTION;
 const databaseAndCollection = {db: db, collection: collection};
 
 const { MongoClient, ServerApiVersion} = require('mongodb');
-const uri = `mongodb+srv://${userName}:${password}@cluster0.gyq2d5s.mongodb.net/?retryWrites=true&w=majority`;
+const uri = `mongodb+srv://${userName}:${password}@cluster0.vj5zf11.mongodb.net/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
 const bodyParser = require("body-parser");
