@@ -1,0 +1,15 @@
+<div class="book">
+	<div class="book_img">
+		<img src=<%= img_url %>>
+	</div>
+
+	<div class="book_info">
+		<h3><%= title %></h3>
+		<pre><%= authors %></pre>
+	</div>
+	<form action="http://localhost:7000/removeBook" method="post">
+		<input type="input" name="key" value=<%= key %> hidden>
+		<input type="submit" value="remove">
+		<!-- <input type="button" value="remove" onclick="removeBook(key)"> -->
+	</form>
+</div>
