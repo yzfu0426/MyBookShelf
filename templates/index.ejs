@@ -44,7 +44,7 @@ body {
 <div style="padding-left:180px">
   <div style="padding-top:200px">
     <h1>What book are you looking for?</h1>
-    <form>
+    <form action="http://localhost:<%- portNumber %>/search" method="get">
       <label><strong>Book Title: </strong><input type="text" name="title"></label>
       <input type="reset" >
 		  <input type="submit" value="Go">

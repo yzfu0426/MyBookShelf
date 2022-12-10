@@ -62,11 +62,12 @@ if (process.argv.length != 3) {
 }
 const portNumber = process.argv[2];
 let buttonName1, buttonName2;
+let loggedIn = false;
 
 app.get('/', (request, response) => {
     buttonName1 = "Login";
     buttonName2 = "Sign up";
-    response.render('index', {buttonName1, buttonName2});
+    response.render('index', {portNumber, buttonName1, buttonName2});
 })
 
 // TODO: add password double confirmation, check whether user already existed in the database
@@ -87,7 +88,7 @@ app.post('/processSignUp', async (request, response) => {
         await insertUser(user);
         buttonName1 = "Booklist";
         buttonName2 = username;
-        response.render('index', {buttonName1, buttonName2});
+        response.render('index', {portNumber, buttonName1, buttonName2});
     } catch (e) {
         console.log(e);
     } finally {
@@ -112,11 +113,12 @@ app.post('/processLogIn', async (request, response) => {
             console.log("Incorrect password, try again");
             let title = "Log In";
             let process = "processLogIn";
+            loggedIn = true;
             response.render('credentials', {portNumber, process, title});
         } else {
             buttonName1 = "Booklist";
             buttonName2 = username;
-            response.render('index', {buttonName1, buttonName2});
+            response.render('index', {portNumber, buttonName1, buttonName2});
         }
     } catch (e) {
         console.log(e);
@@ -126,9 +128,64 @@ app.post('/processLogIn', async (request, response) => {
 })
 
 
-//https://openlibrary.org/search.json?title=atomic+habits
-app.get('/search', (request, response) => {
+// https://openlibrary.org/search.json?title=atomic+habits
+// https://openlibrary.org/search.json?q=atomic+habits
+// http://covers.openlibrary.org/b/isbn/6077476714-L.jpg
+app.get('/search', async(request, response) => {
     const {title} = request.query;
+    let result = await fetch(`https://openlibrary.org/search.json?q=${title.split(" ").join("+")}`)
+                .then(response => response.json())
+                .then(b => b.docs);
+    //console.log(result);
+    let bookList = [];
+    await result.forEach(async (book) => {
+        if (book?.cover_i) { 
+            console.log(book?.cover_i);
+            let book_json = {
+                title: book?.title,
+                authors: book?.author_name,
+                key: book?.key,
+                //have_read:false,
+                // description: await fetch(`https://openlibrary.org/works/${book?.key}.json`,
+                //                         {method: 'GET'})
+                //                     .then(response => response.json())
+                //                     .then(json => json.description)
+                //                     .catch(e => console.log(e)),
+                cover_id: book?.cover_i
+            };
+            console.log(book_json);
+            bookList.push(book_json);
+        }
+    });
+    console.log(bookList);
+    let table = "<table border='1'>";
+    table += '<tr><th>Title</th><th>authors</th><th>Cover Image</th><th>Add</th></tr>';
+    bookList.forEach((book_json) => {
+        let img = `<img src="https://covers.openlibrary.org/b/id/${book_json.cover_id}-S.jpg"/>`;
+
+        table += `<tr><td>${book_json.title}</td>
+                    <td>${book_json.authors}</td>
+                    <td>${img}</td>
+                    <td><form action="http://localhost:${portNumber}/addBook" method="post">
+                        <input type="submit" value="Add to booklists">
+                        </form></td></tr>`
+        });
+        table += '</table>';
+
+    // let table = "<table border='1'>";
+    // table += '<tr><th>Title</th><th>authors</th><th>key</th><th>Image</th><th>cover_i</th></tr>';
+    // result.forEach(book => {
+    //     let img = book?.isbn ? `<img src="https://covers.openlibrary.org/b/isbn/${book.isbn[0]}-S.jpg"/>`: "Cover Image not found";
+    //     table += `<tr><td>${book.title}</td>
+    //                   <td>${book?.author_name}</td>
+    //                   <td>${book?.key}</td>
+    //                   <td>${img}</td>
+    //                   <td>${book?.cover_i}</td></td></tr>`
+    // });
+    // table += '</table>';
+
+    //console.log(table);
+    response.render('showBooks', {title, table});
 })
 
 
