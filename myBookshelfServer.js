@@ -13,8 +13,6 @@ const { MongoClient, ServerApiVersion} = require('mongodb');
 const uri = `mongodb+srv://${userName}:${password}@cluster0.gyq2d5s.mongodb.net/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 const bodyParser = require("body-parser");
-const { request } = require('http');
-const { response } = require('express');
 app.use(bodyParser.urlencoded({extended:false}));
 
 process.stdin.setEncoding("utf8");
@@ -31,6 +29,7 @@ const portNumber = process.argv[2];
 let buttonName1, buttonName2;
 let loggedIn = false;
 
+app.use(express.json());
 app.get('/', (request, response) => {
     // let buttonName1 = loggedIn ? "Booklist" : "Log in";
     // let buttonName2 = loggedIn ? user : "Sign Up";
