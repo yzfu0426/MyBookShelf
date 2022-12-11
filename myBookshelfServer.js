@@ -1,6 +1,7 @@
 const path = require("path");
 const express = require('express');
 const app = express();
+const session = require("express-session");
 const bodyParser = require("body-parser");
 const cookieParser = require("cookie-parser");
 const { MongoClient, ServerApiVersion, ObjectId} = require("mongodb");
@@ -16,11 +17,18 @@ const databaseAndCollection = {db: db, collection: collection};
 const uri = `mongodb+srv://${userName}:${password}@cluster0.gyq2d5s.mongodb.net/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
-const userId = ObjectId("6394c0c1126bdfee4ce0bc7a");
+// const userId = ObjectId("6394c0c1126bdfee4ce0bc7a");
 
 app.use(bodyParser.urlencoded({extended:false}));
 app.use(cookieParser());
 app.use(express.json());
+app.use(
+    session({
+      resave: true,
+      saveUninitialized: false,
+      secret: "putsomethingsecretheredontshow", // use .env for secret string
+    })
+  );
 
 app.set("views", path.resolve(__dirname, "templates"));
 app.set("view engine", "ejs");
@@ -29,20 +37,28 @@ app.set("view engine", "ejs");
 let buttonName1, buttonName2;
 
 
-app.get('/', (request, response) => {
-    buttonName1 = "Login";
-    buttonName2 = "Sign up";
-    response.render('index', {portNumber, buttonName1, buttonName2});
+app.get('/', (request, response) => {   
+    // console.log(request.session);
+    if (request.session.user_id != undefined) {
+        buttonName1 = "Booklist";
+        buttonName2 = request.session.username;
+        response.render('index', {portNumber, buttonName1, buttonName2});
+    } else {
+        buttonName1 = "login";
+        buttonName2 = "Sign up";
+        response.render('index', {portNumber, buttonName1, buttonName2});
+    }
+    
 })
 
 // TODO: add password double confirmation, check whether user already existed in the database
 app.get('/signUp', (request, response) => {
     let title = "Sign Up";
-    let process = "processSignUp";
-    response.render('credentials', {portNumber, process, title});
+    let process = "signUp";
+    response.render('credentials', {flag:false, portNumber, process, title});
 })
 
-app.post('/processSignUp', async (request, response) => {
+app.post('/signUp', async (request, response) => {
     let {username, password} = request.body;
     try {
         await client.connect();
@@ -51,9 +67,10 @@ app.post('/processSignUp', async (request, response) => {
                     password: password,
                     booklist: []};
         await insertUser(user);
-        buttonName1 = "Booklist";
-        buttonName2 = username;
-        response.render('index', {portNumber, buttonName1, buttonName2});
+        request.session.user_id = user._id;
+        request.session.username = username;
+        request.session.save();
+        response.redirect('/');
     } catch (e) {
         console.log(e);
     } finally {
@@ -61,29 +78,34 @@ app.post('/processSignUp', async (request, response) => {
     }
 })
 
-app.get('/logIn', (request, response) => {
+app.get('/login', (request, response) => {
     let title = "Log In";
-    let process = "processLogIn";
-    response.render('credentials', {portNumber, process, title});
+    let process = "login";
+    response.render('credentials', {flag:false, portNumber, process, title});
 })
 
-app.post('/processLogIn', async (request, response) => {
+app.post('/login', async (request, response) => {
     let {username, password} = request.body;
     try {
         await client.connect();
         console.log("**** Log In one user ****");
-        let user = await logUserIn(username, password);
+        let user = await findUserByName(username, password);
         // TODO: add logic to check whether user exists
-        if (user['password'] !== password) {
+        if (!user){
+            console.log(`The user with user name ${username} doesn't exist, try to sign up`);
+            response.redirect("/signUp");
+        } else if (user['password'] !== password) {
             console.log("Incorrect password, try again");
             let title = "Log In";
-            let process = "processLogIn";
-            loggedIn = true;
-            response.render('credentials', {portNumber, process, title});
+            let process = "login";
+            let flag = true;
+            response.render('credentials', {flag, portNumber, process, title});
+            //response.status(401).send("Wrong password, try again");
         } else {
-            buttonName1 = "Booklist";
-            buttonName2 = username;
-            response.render('index', {portNumber, buttonName1, buttonName2});
+            request.session.user_id = user._id;
+            request.session.username = username;
+            request.session.save();
+            response.redirect('/');
         }
     } catch (e) {
         console.log(e);
@@ -91,6 +113,13 @@ app.post('/processLogIn', async (request, response) => {
         await client.close();
     }
 })
+
+app.get("/logout", (request, response) => {
+    if (request.session.username != undefined) {
+        request.session.destroy();
+    }
+    response.redirect("/");
+});
 
 
 // https://openlibrary.org/search.json?title=atomic+habits
@@ -132,7 +161,11 @@ app.get('/search', async(request, response) => {
                     <td>${book_json.authors}</td>
                     <td>${img}</td>
                     <td><form action="http://localhost:${portNumber}/addBook" method="post">
-                        <input type="submit" value="Add to booklists">
+                        <input hidden type="text" name="key" value="${book_json.key}">
+                        <input hidden type="text" name="title" value="${book_json.title}">
+                        <input hidden type="text" name="authors" value="${book_json.authors}">
+                        <input hidden type="text" name="cover_id" value="${book_json.cover_id}">
+                        <input id="add_book" type="submit" value="Add to booklists">
                         </form></td></tr>`
         });
         table += '</table>';
@@ -146,20 +179,24 @@ app.get('/search', async(request, response) => {
 app.get("/booklist", (request, response) => {
     
     // getBooklist().then(books => response.end(JSON.stringify(books)));
-    getBooklist().then(books => response.render("booklist", {books: books}));
+    getBooklist(request.session).then(books => response.render("booklist", {books: books, port: portNumber}));
 });
 
 // add books to booklist
 app.post("/addBook", (request, response) => {
-    const bookInfo = {
-        key: request.body.key,
-        title: request.body.title,
-        authors: request.body.authors,
-        description: request.body.description,
-        cover_id: request.body.cover_id,
-    };
+    if (request.session.user_id === undefined) {
+        response.redirect("/login");
+    } else {
+        const bookInfo = {
+            key: request.body.key,
+            title: request.body.title,
+            authors: request.body.authors,
+            cover_id: request.body.cover_id,
+        };
 
-    addBook(bookInfo).then(() => response.end(JSON.stringify(bookInfo)));
+        addBook(request.session, bookInfo).then(() => response.redirect("/booklist"));
+    }
+        // addBook(request.session, bookInfo).then(() => response.end(JSON.stringify(bookInfo)));
 });
 
 // remove a book from booklist and go back to booklist page
@@ -168,7 +205,7 @@ app.post("/removeBook", (request, response) => {
 
     console.log(key);
 
-    removeBook(key)
+    removeBook(request.session, key)
         // .then(() => getBooklist())
         .then(() => response.redirect("/booklist"));
 });
@@ -217,7 +254,7 @@ async function insertUser(user) {
 }
 
 
-async function logUserIn(username, password) {
+async function findUserByName(username, password) {
     let filter = {username:username};
     const result = await client.db(databaseAndCollection.db)
                          .collection(databaseAndCollection.collection)
@@ -228,9 +265,9 @@ async function logUserIn(username, password) {
 } 
 
 
-async function getBooklist() {
+async function getBooklist(session) {
     try {
-        let filter = { _id: userId };
+        let filter = { _id: ObjectId(session.user_id) };
         await client.connect();
         const result = await client
                             .db(databaseAndCollection.db)
@@ -244,9 +281,10 @@ async function getBooklist() {
     }
 }
 
-async function addBook(bookInfo) {
+async function addBook(session, bookInfo) {
   try {
-    let filter = { _id: userId};
+    let filter = { _id: ObjectId(session.user_id) };
+    console.log(session.user_id);
     console.log(bookInfo);
     await client.connect();
     const result = await client.db(databaseAndCollection.db)
@@ -257,15 +295,15 @@ async function addBook(bookInfo) {
                         );
 
     await client.close();
-
+    console.log(result);
   } catch (e) {
     console.log(e);
   }
 }
 
-async function removeBook(key) {
+async function removeBook(session, key) {
   try {
-    let filter = { _id: userId };
+    let filter = { _id: ObjectId(session.user_id) };
 
     await client.connect();
     const result = await client
