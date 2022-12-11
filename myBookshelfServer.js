@@ -168,19 +168,6 @@ app.get('/search', async(request, response) => {
         });
         table += '</table>';
 
-    // let table = "<table border='1'>";
-    // table += '<tr><th>Title</th><th>authors</th><th>key</th><th>Image</th><th>cover_i</th></tr>';
-    // result.forEach(book => {
-    //     let img = book?.isbn ? `<img src="https://covers.openlibrary.org/b/isbn/${book.isbn[0]}-S.jpg"/>`: "Cover Image not found";
-    //     table += `<tr><td>${book.title}</td>
-    //                   <td>${book?.author_name}</td>
-    //                   <td>${book?.key}</td>
-    //                   <td>${img}</td>
-    //                   <td>${book?.cover_i}</td></td></tr>`
-    // });
-    // table += '</table>';
-
-    //console.log(table);
     response.render('showBooks', {title, table});
 })
 
