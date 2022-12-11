@@ -9,11 +9,45 @@ const collection = process.env.MONGO_COLLECTION;
 
 const databaseAndCollection = {db: db, collection: collection};
 
-const { MongoClient, ServerApiVersion} = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId} = require('mongodb');
 const uri = `mongodb+srv://${userName}:${password}@cluster0.gyq2d5s.mongodb.net/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 const bodyParser = require("body-parser");
 app.use(bodyParser.urlencoded({extended:false}));
+app.set("views", path.resolve(__dirname, "templates"));
+app.set("view engine", "ejs");
+
+// show users booklist
+app.get("/booklist", (request, response) => {
+    
+    // getBooklist().then(books => response.end(JSON.stringify(books)));
+    getBooklist().then(books => response.render("booklist", {books: books}));
+});
+
+// add books to booklist
+app.post("/addBook", (request, response) => {
+    const bookInfo = {
+        key: request.body.key,
+        title: request.body.title,
+        authors: request.body.authors,
+        description: request.body.description,
+        cover_id: request.body.cover_id,
+    };
+
+    addBook(bookInfo).then(() => response.end(JSON.stringify(bookInfo)));
+});
+
+// remove a book from booklist and go back to booklist page
+app.post("/removeBook", (request, response) => {
+    const key = request.body.key;
+
+    console.log(key);
+
+    removeBook(key)
+        // .then(() => getBooklist())
+        .then(() => response.redirect("/booklist"));
+});
+
 
 process.stdin.setEncoding("utf8");
 
@@ -21,18 +55,12 @@ if (process.argv.length != 3) {
     process.stdout.write("Usage myBookshelfServer.js PORT_NUMBER");
     process.exit(1);
 }
-
-app.set("views", path.resolve(__dirname, "templates"));
-app.set("view engine", "ejs");
-
 const portNumber = process.argv[2];
 let buttonName1, buttonName2;
 let loggedIn = false;
 
 app.use(express.json());
 app.get('/', (request, response) => {
-    // let buttonName1 = loggedIn ? "Booklist" : "Log in";
-    // let buttonName2 = loggedIn ? user : "Sign Up";
     buttonName1 = "Login";
     buttonName2 = "Sign up";
     response.render('index', {portNumber, buttonName1, buttonName2});
@@ -176,7 +204,63 @@ process.stdin.on("readable", function(){
         process.stdout.write(prompt);
         process.stdin.resume();
     }
-})
+});
+
+async function getBooklist() {
+    try {
+        let filter = { _id: userId };
+        await client.connect();
+        const result = await client
+                            .db(databaseAndCollection.db)
+                            .collection(databaseAndCollection.collection)
+                            .findOne(filter);
+
+        await client.close();
+        return result.booklist;
+    } catch (e) {
+        console.log(e);
+    }
+}
+
+async function addBook(bookInfo) {
+  try {
+    let filter = { _id: userId};
+    console.log(bookInfo);
+    await client.connect();
+    const result = await client.db(databaseAndCollection.db)
+                        .collection(databaseAndCollection.collection)
+                        .updateOne(
+                            filter,
+                            {$push: {booklist: bookInfo}}
+                        );
+
+    await client.close();
+
+  } catch (e) {
+    console.log(e);
+  }
+}
+
+async function removeBook(key) {
+  try {
+    let filter = { _id: userId };
+
+    await client.connect();
+    const result = await client
+                        .db(databaseAndCollection.db)
+                        .collection(databaseAndCollection.collection)
+                        .updateOne(
+                            filter,
+                            {$pull: {booklist: {key: key}}}
+                        );
+
+    await client.close();
+    console.log(result);
+  } catch (e) {
+    console.log(e);
+  }
+};
+
 
 
 
@@ -198,15 +282,3 @@ async function logUserIn(username, password) {
     return result;
 
 } 
-
-// function tryToAddBook(loggedIn, request, response, bookInfo) {
-//     console.log("In try to add book");
-//     if (!loggedIn) {
-//         buttonName1 = "Login";
-//         buttonName2 = "Sign up";
-//         response.render('index', {portNumber, buttonName1, buttonName2});
-//     } else {
-//         // ????????????
-//         addBook(bookInfo);
-//     }
-// }
