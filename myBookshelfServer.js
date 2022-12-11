@@ -1,65 +1,34 @@
+const path = require("path");
 const express = require('express');
 const app = express();
-const path = require("path");
-require("dotenv").config({ path: path.resolve(__dirname, '.env') }) 
+const bodyParser = require("body-parser");
+const cookieParser = require("cookie-parser");
+const { MongoClient, ServerApiVersion, ObjectId} = require("mongodb");
+
+
+require("dotenv").config({ path: path.resolve(__dirname, '.env') });
 const userName = process.env.MONGO_DB_USERNAME;
 const password = process.env.MONGO_DB_PASSWORD;
 const db = process.env.MONGO_DB_NAME;
 const collection = process.env.MONGO_COLLECTION;
-
 const databaseAndCollection = {db: db, collection: collection};
 
-const { MongoClient, ServerApiVersion, ObjectId} = require('mongodb');
 const uri = `mongodb+srv://${userName}:${password}@cluster0.gyq2d5s.mongodb.net/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
-const bodyParser = require("body-parser");
+
+const userId = ObjectId("6394c0c1126bdfee4ce0bc7a");
+
 app.use(bodyParser.urlencoded({extended:false}));
+app.use(cookieParser());
+app.use(express.json());
+
 app.set("views", path.resolve(__dirname, "templates"));
 app.set("view engine", "ejs");
 
-// show users booklist
-app.get("/booklist", (request, response) => {
-    
-    // getBooklist().then(books => response.end(JSON.stringify(books)));
-    getBooklist().then(books => response.render("booklist", {books: books}));
-});
 
-// add books to booklist
-app.post("/addBook", (request, response) => {
-    const bookInfo = {
-        key: request.body.key,
-        title: request.body.title,
-        authors: request.body.authors,
-        description: request.body.description,
-        cover_id: request.body.cover_id,
-    };
-
-    addBook(bookInfo).then(() => response.end(JSON.stringify(bookInfo)));
-});
-
-// remove a book from booklist and go back to booklist page
-app.post("/removeBook", (request, response) => {
-    const key = request.body.key;
-
-    console.log(key);
-
-    removeBook(key)
-        // .then(() => getBooklist())
-        .then(() => response.redirect("/booklist"));
-});
-
-
-process.stdin.setEncoding("utf8");
-
-if (process.argv.length != 3) {
-    process.stdout.write("Usage myBookshelfServer.js PORT_NUMBER");
-    process.exit(1);
-}
-const portNumber = process.argv[2];
 let buttonName1, buttonName2;
-let loggedIn = false;
 
-app.use(express.json());
+
 app.get('/', (request, response) => {
     buttonName1 = "Login";
     buttonName2 = "Sign up";
@@ -173,6 +142,48 @@ app.get('/search', async(request, response) => {
 
 
 
+// show users booklist
+app.get("/booklist", (request, response) => {
+    
+    // getBooklist().then(books => response.end(JSON.stringify(books)));
+    getBooklist().then(books => response.render("booklist", {books: books}));
+});
+
+// add books to booklist
+app.post("/addBook", (request, response) => {
+    const bookInfo = {
+        key: request.body.key,
+        title: request.body.title,
+        authors: request.body.authors,
+        description: request.body.description,
+        cover_id: request.body.cover_id,
+    };
+
+    addBook(bookInfo).then(() => response.end(JSON.stringify(bookInfo)));
+});
+
+// remove a book from booklist and go back to booklist page
+app.post("/removeBook", (request, response) => {
+    const key = request.body.key;
+
+    console.log(key);
+
+    removeBook(key)
+        // .then(() => getBooklist())
+        .then(() => response.redirect("/booklist"));
+});
+
+
+
+process.stdin.setEncoding("utf8");
+
+if (process.argv.length != 3) {
+  process.stdout.write("Usage myBookshelfServer.js PORT_NUMBER");
+  process.exit(1);
+}
+
+// cli
+const portNumber = process.argv[2];
 app.listen(portNumber);
 console.log(`Web server started and running at: http://localhost:${portNumber}`);
 
@@ -192,6 +203,30 @@ process.stdin.on("readable", function(){
         process.stdin.resume();
     }
 });
+
+
+
+
+
+async function insertUser(user) {
+    const result = await client
+                        .db(databaseAndCollection.db)
+                        .collection(databaseAndCollection.collection)
+                        .insertOne(user);
+    console.log(`Applicant entry created with id ${result.insertedId}`);
+}
+
+
+async function logUserIn(username, password) {
+    let filter = {username:username};
+    const result = await client.db(databaseAndCollection.db)
+                         .collection(databaseAndCollection.collection)
+                         .findOne(filter);
+
+    return result;
+
+} 
+
 
 async function getBooklist() {
     try {
@@ -247,25 +282,3 @@ async function removeBook(key) {
     console.log(e);
   }
 };
-
-
-
-
-async function insertUser(user) {
-    const result = await client
-                        .db(databaseAndCollection.db)
-                        .collection(databaseAndCollection.collection)
-                        .insertOne(user);
-    console.log(`Applicant entry created with id ${result.insertedId}`);
-}
-
-
-async function logUserIn(username, password) {
-    let filter = {username:username};
-    const result = await client.db(databaseAndCollection.db)
-                         .collection(databaseAndCollection.collection)
-                         .findOne(filter);
-
-    return result;
-
-} 
