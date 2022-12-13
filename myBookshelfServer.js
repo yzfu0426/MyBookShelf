@@ -32,6 +32,8 @@ app.use(
 
 app.set("views", path.resolve(__dirname, "templates"));
 app.set("view engine", "ejs");
+let assestsPath = path.resolve(__dirname, "assests");
+app.use(express.static(assestsPath));
 
 
 let buttonName1, buttonName2;
