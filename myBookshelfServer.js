@@ -214,13 +214,14 @@ app.post("/removeBook", (request, response) => {
 
 process.stdin.setEncoding("utf8");
 
-if (process.argv.length != 3) {
-  process.stdout.write("Usage myBookshelfServer.js PORT_NUMBER");
+if (process.argv.length != 2) {
+  process.stdout.write("Usage myBookshelfServer.js");
   process.exit(1);
 }
 
 // cli
-const portNumber = process.argv[2];
+// const portNumber = process.argv[2];
+const portNumber = 80;
 app.listen(portNumber);
 console.log(`Web server started and running at: http://localhost:${portNumber}`);
 
