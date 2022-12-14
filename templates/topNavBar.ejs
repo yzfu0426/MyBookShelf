@@ -1,4 +1,8 @@
 <div class="topnav">
-    <a class="active" href=<%=`${loggedIn ? "/login" : "/booklist"}`%>> <%- buttonName1 %></a>
-    <a href=<%=`${loggedIn ? "/signUp" : "/logout"}`%>><%- buttonName2 %></a>
+    <a class="active" href=<%=`${!session.username ? "/login" : "/logout"}`%>> 
+      <%- `${!session.username ? "login" : session.username}` %>
+    </a>
+    <a href=<%=`${!session.username ? "/signUp" : "/booklist"}`%>>
+      <%- `${!session.username ? "Sign Up": "Booklist"}` %></a>
+    <a href="/">HOME</a>
   </div>

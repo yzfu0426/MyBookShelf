@@ -36,19 +36,14 @@ let assestsPath = path.resolve(__dirname, "assests");
 app.use(express.static(assestsPath));
 
 
-let buttonName1, buttonName2;
-
 
 app.get('/', (request, response) => {   
     // console.log(request.session);
+    let session = request.session;
     if (request.session.user_id != undefined) {
-        buttonName1 = "Booklist";
-        buttonName2 = request.session.username;
-        response.render('index', {portNumber, buttonName1, buttonName2});
+        response.render('index', {portNumber, session});
     } else {
-        buttonName1 = "login";
-        buttonName2 = "Sign up";
-        response.render('index', {portNumber, buttonName1, buttonName2});
+        response.render('index', {portNumber, session});
     }
     
 })
@@ -157,7 +152,7 @@ app.get('/search', async(request, response) => {
     let table = "<table border='1'>";
     table += '<tr><th>Title</th><th>authors</th><th>Cover Image</th><th>Add</th></tr>';
     bookList.forEach((book_json) => {
-        let img = `<img src="https://covers.openlibrary.org/b/id/${book_json.cover_id}-S.jpg"/>`;
+        let img = `<img src="https://covers.openlibrary.org/b/id/${book_json.cover_id}-L.jpg"/>`;
 
         table += `<tr><td>${book_json.title}</td>
                     <td>${book_json.authors}</td>
@@ -167,12 +162,13 @@ app.get('/search', async(request, response) => {
                         <input hidden type="text" name="title" value="${book_json.title}">
                         <input hidden type="text" name="authors" value="${book_json.authors}">
                         <input hidden type="text" name="cover_id" value="${book_json.cover_id}">
-                        <input id="add_book" type="submit" value="Add to booklists">
+                        <input id="add_book" type="submit" value="Add to booklist">
                         </form></td></tr>`
         });
-        table += '</table>';
+    table += '</table>';
+    let session = request.session;
 
-    response.render('showBooks', {title, table});
+    response.render('showBooks', {session, title, table});
 })
 
 
@@ -181,7 +177,8 @@ app.get('/search', async(request, response) => {
 app.get("/booklist", (request, response) => {
     
     // getBooklist().then(books => response.end(JSON.stringify(books)));
-    getBooklist(request.session).then(books => response.render("booklist", {books: books, port: portNumber}));
+    let session = request.session;
+    getBooklist(request.session).then(books => response.render("booklist", {session, books: books, port: portNumber}));
 });
 
 // add books to booklist
