@@ -14,7 +14,8 @@ const db = process.env.MONGO_DB_NAME;
 const collection = process.env.MONGO_COLLECTION;
 const databaseAndCollection = {db: db, collection: collection};
 
-const uri = `mongodb+srv://${userName}:${password}@cluster0.gyq2d5s.mongodb.net/?retryWrites=true&w=majority`;
+//const uri = `mongodb+srv://${userName}:${password}@cluster0.gyq2d5s.mongodb.net/?retryWrites=true&w=majority`;
+const uri = `mongodb+srv://${userName}:${password}@cluster0.vj5zf11.mongodb.net/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
 // const userId = ObjectId("6394c0c1126bdfee4ce0bc7a");
