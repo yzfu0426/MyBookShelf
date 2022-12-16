@@ -13,7 +13,7 @@ This website lets user search books by title and add books to booklist. It suppo
 * Add book to booklist 
 * remove book from booklist
 
-### 3. API link: https://openlibrary.org/search.json?q=
+### 3. API link: https://openlibrary.org/developers/api
 
-### 4. YouTube Demo Video: 
+### 4. YouTube Demo Video: https://youtu.be/yzaSMZSXzU0
 
