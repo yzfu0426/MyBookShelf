@@ -11,7 +11,7 @@
 
 	<%- include("./topNavBar") %>
 	
-	<% books.forEach(book => {%>
+	<% books?.forEach(book => {%>
 		<%- include("./book", {
 								img_url: `https://covers.openlibrary.org/b/id/${book.cover_id}-L.jpg`,
 								title: book.title,

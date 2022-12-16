@@ -179,7 +179,12 @@ app.get("/booklist", (request, response) => {
     
     // getBooklist().then(books => response.end(JSON.stringify(books)));
     let session = request.session;
-    getBooklist(request.session).then(books => response.render("booklist", {session, books: books, port: portNumber}));
+    
+    if (session.user_id === undefined) {
+        response.redirect("/login");
+    } else {
+        getBooklist(request.session).then(books => response.render("booklist", {session, books: books, port: portNumber}));
+    }
 });
 
 // add books to booklist
@@ -204,10 +209,14 @@ app.post("/removeBook", (request, response) => {
     const key = request.body.key;
 
     console.log(key);
+    if (request.session.user_id === undefined) {
+        response.redirect("/login");
+    } else {
+        removeBook(request.session, key)
+            // .then(() => getBooklist())
+            .then(() => response.redirect("/booklist"));
+    }
 
-    removeBook(request.session, key)
-        // .then(() => getBooklist())
-        .then(() => response.redirect("/booklist"));
 });
 
 
