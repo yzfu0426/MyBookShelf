@@ -9,7 +9,7 @@
 		<h3><%= title %></h3>
 		<pre><%= authors %></pre>
 	</div>
-	<form action="http://localhost:<%= port %>/removeBook" method="post">
+	<form action="/removeBook" method="post">
 		<input hidden type="input" name="key" value=<%= key ?? "" %>>
 		<input type="submit" value="remove">
 		<!-- <input type="button" value="remove" onclick="removeBook(key)"> -->

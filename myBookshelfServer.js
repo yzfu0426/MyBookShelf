@@ -158,7 +158,7 @@ app.get('/search', async(request, response) => {
         table += `<tr><td>${book_json.title}</td>
                     <td>${book_json.authors}</td>
                     <td>${img}</td>
-                    <td><form action="http://localhost:${portNumber}/addBook" method="post">
+                    <td><form action="/addBook" method="post">
                         <input hidden type="text" name="key" value="${book_json.key}">
                         <input hidden type="text" name="title" value="${book_json.title}">
                         <input hidden type="text" name="authors" value="${book_json.authors}">
